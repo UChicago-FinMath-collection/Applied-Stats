@@ -2,6 +2,261 @@
 
 ---
 
+## Q: Help me solve Problem 6 (Posterior Predictive Distribution).
+
+### A: Problem 6 -- Detailed Solution
+
+**Context.** We want to predict $y_{n+1}$ at a new input $\mathbf{x}_{n+1}$, integrating over our posterior uncertainty in both $\boldsymbol{\beta}$ and $\sigma^2$. The posterior from Problem 1 is:
+
+$$
+p(\boldsymbol{\beta}, \sigma^2 \mid \mathbf{y}, X, \boldsymbol{\eta}_0) = \chi^{-2}(\sigma^2 \mid \nu_n, \tau_n^2)\;\mathcal{N}(\boldsymbol{\beta} \mid \mathbf{m}_n, \sigma^2 L_n^{-1})
+$$
+
+---
+
+### Problem 6a: Write the Joint (DETAILED)
+
+**What we need:** $p(y_{n+1}, \boldsymbol{\beta}, \sigma^2 \mid \mathbf{x}_{n+1}, \mathbf{y}, X, \boldsymbol{\eta}_0)$
+
+This is the joint distribution over three things: the new outcome $y_{n+1}$, the coefficients $\boldsymbol{\beta}$, and the variance $\sigma^2$ -- all conditioned on the new input $\mathbf{x}_{n+1}$, the observed training data $(\mathbf{y}, X)$, and the hyperparameters $\boldsymbol{\eta}_0$.
+
+**Step 1: Apply the product rule.**
+
+The product rule says $p(A, B) = p(A \mid B) \cdot p(B)$. Here, let $A = y_{n+1}$ and $B = (\boldsymbol{\beta}, \sigma^2)$:
+
+$$
+p(y_{n+1}, \boldsymbol{\beta}, \sigma^2 \mid \mathbf{x}_{n+1}, \mathbf{y}, X, \boldsymbol{\eta}_0)
+= \underbrace{p(y_{n+1} \mid \boldsymbol{\beta}, \sigma^2, \mathbf{x}_{n+1}, \mathbf{y}, X, \boldsymbol{\eta}_0)}_{\text{(i)}}
+\cdot \underbrace{p(\boldsymbol{\beta}, \sigma^2 \mid \mathbf{y}, X, \boldsymbol{\eta}_0)}_{\text{(ii)}}
+$$
+
+**Step 2: Simplify factor (i).**
+
+Factor (i) is $p(y_{n+1} \mid \boldsymbol{\beta}, \sigma^2, \mathbf{x}_{n+1}, \mathbf{y}, X, \boldsymbol{\eta}_0)$. But once we know the parameters $\boldsymbol{\beta}$ and $\sigma^2$, the new observation $y_{n+1}$ only depends on $\mathbf{x}_{n+1}$ -- it is **conditionally independent** of the old data $(\mathbf{y}, X)$ and hyperparameters $\boldsymbol{\eta}_0$. This is because our model says each $y_i$ is drawn independently given $\boldsymbol{\beta}$ and $\sigma^2$:
+
+$$
+p(y_{n+1} \mid \boldsymbol{\beta}, \sigma^2, \mathbf{x}_{n+1}, \mathbf{y}, X, \boldsymbol{\eta}_0)
+= p(y_{n+1} \mid \boldsymbol{\beta}, \sigma^2, \mathbf{x}_{n+1})
+$$
+
+From the model specification (the likelihood), this is simply:
+
+$$
+p(y_{n+1} \mid \boldsymbol{\beta}, \sigma^2, \mathbf{x}_{n+1}) = \mathcal{N}(y_{n+1} \mid \mathbf{x}_{n+1}^T\boldsymbol{\beta},\; \sigma^2)
+$$
+
+**Step 3: Identify factor (ii).**
+
+Factor (ii) is $p(\boldsymbol{\beta}, \sigma^2 \mid \mathbf{y}, X, \boldsymbol{\eta}_0)$ -- this is exactly the posterior we derived in Problem 1:
+
+$$
+p(\boldsymbol{\beta}, \sigma^2 \mid \mathbf{y}, X, \boldsymbol{\eta}_0)
+= \chi^{-2}(\sigma^2 \mid \nu_n, \tau_n^2)\;\mathcal{N}(\boldsymbol{\beta} \mid \mathbf{m}_n,\, \sigma^2 L_n^{-1})
+$$
+
+**Step 4: Combine.**
+
+$$
+\boxed{
+p(y_{n+1}, \boldsymbol{\beta}, \sigma^2 \mid \mathbf{x}_{n+1}, \mathbf{y}, X, \boldsymbol{\eta}_0)
+= \underbrace{\mathcal{N}(y_{n+1} \mid \mathbf{x}_{n+1}^T\boldsymbol{\beta},\, \sigma^2)}_{\text{likelihood of new point}}
+\cdot \underbrace{\chi^{-2}(\sigma^2 \mid \nu_n, \tau_n^2)}_{\text{posterior on } \sigma^2}
+\cdot \underbrace{\mathcal{N}(\boldsymbol{\beta} \mid \mathbf{m}_n,\, \sigma^2 L_n^{-1})}_{\text{posterior on } \boldsymbol{\beta} \mid \sigma^2}
+}
+$$
+
+**Interpretation:** This joint has three natural pieces:
+- The likelihood tells us how $y_{n+1}$ is generated given parameters
+- The posterior (from Problem 1) tells us what we believe about the parameters after seeing the training data
+- Together, they describe the full joint uncertainty over the prediction and the parameters
+
+---
+
+### Problem 6b: Compute the Posterior Predictive (DETAILED)
+
+**What we need:**
+
+$$
+p(y_{n+1} \mid \mathbf{x}_{n+1}, \mathbf{y}, X, \boldsymbol{\eta}_0)
+= \int\!\!\int p(y_{n+1}, \boldsymbol{\beta}, \sigma^2 \mid \mathbf{x}_{n+1}, \mathbf{y}, X, \boldsymbol{\eta}_0)\;d\boldsymbol{\beta}\;d\sigma^2
+$$
+
+This is the sum rule of probability: to get the distribution of $y_{n+1}$ alone, we integrate (sum) over all possible values of $\boldsymbol{\beta}$ and $\sigma^2$. This looks like a hard double integral, but we can do it in two stages using conjugacy, **without ever computing an integral directly**.
+
+**Strategy:** We will integrate in a specific order -- first $\boldsymbol{\beta}$, then $\sigma^2$ -- because each step reduces to a known conjugacy result.
+
+$$
+p(y_{n+1} \mid \mathbf{x}_{n+1}, \mathbf{y}, X, \boldsymbol{\eta}_0)
+= \int \underbrace{\left[\int p(y_{n+1}, \boldsymbol{\beta}, \sigma^2 \mid \cdots)\;d\boldsymbol{\beta}\right]}_{\text{Stage 1: integrate out } \boldsymbol{\beta}}\;d\sigma^2
+$$
+
+---
+
+**Stage 1: Integrate out $\boldsymbol{\beta}$ (given $\sigma^2$).**
+
+Plugging in the three factors from 6a, the inner integral is:
+
+$$
+\int p(y_{n+1}, \boldsymbol{\beta}, \sigma^2 \mid \cdots)\;d\boldsymbol{\beta}
+= \chi^{-2}(\sigma^2 \mid \nu_n, \tau_n^2)
+\int \mathcal{N}(y_{n+1} \mid \mathbf{x}_{n+1}^T\boldsymbol{\beta}, \sigma^2)\;\mathcal{N}(\boldsymbol{\beta} \mid \mathbf{m}_n, \sigma^2 L_n^{-1})\;d\boldsymbol{\beta}
+$$
+
+(We pulled the $\chi^{-2}$ factor out of the integral because it doesn't depend on $\boldsymbol{\beta}$.)
+
+The remaining integral is over two Gaussians in $\boldsymbol{\beta}$. To evaluate it, think of it generatively. Conditioned on $\sigma^2$, the model says:
+
+1. Draw $\boldsymbol{\beta} \sim \mathcal{N}(\mathbf{m}_n, \sigma^2 L_n^{-1})$
+2. Draw $\varepsilon_{n+1} \sim \mathcal{N}(0, \sigma^2)$ independently
+3. Set $y_{n+1} = \mathbf{x}_{n+1}^T\boldsymbol{\beta} + \varepsilon_{n+1}$
+
+We want the marginal distribution of $y_{n+1}$ (integrating out $\boldsymbol{\beta}$ and $\varepsilon_{n+1}$).
+
+**Key fact (from Lecture 2):** If $\mathbf{z} \sim \mathcal{N}(\boldsymbol{\mu}, \Sigma)$ and $y = A\mathbf{z} + b + \varepsilon$ where $\varepsilon \sim \mathcal{N}(0, R)$ is independent, then $y$ is also Gaussian with:
+- Mean: $A\boldsymbol{\mu} + b$
+- Variance: $A\Sigma A^T + R$
+
+Here $A = \mathbf{x}_{n+1}^T$ (a $1 \times p$ row vector), $\boldsymbol{\mu} = \mathbf{m}_n$, $\Sigma = \sigma^2 L_n^{-1}$, $b = 0$, $R = \sigma^2$.
+
+**Mean of $y_{n+1} \mid \sigma^2$:**
+
+$$
+\mathbb{E}[y_{n+1} \mid \sigma^2]
+= \mathbf{x}_{n+1}^T \cdot \mathbf{m}_n + 0
+= \mathbf{x}_{n+1}^T\mathbf{m}_n
+$$
+
+(This is just "plug the posterior mean of $\boldsymbol{\beta}$ into the regression equation.")
+
+**Variance of $y_{n+1} \mid \sigma^2$:**
+
+The variance comes from two independent sources of randomness:
+
+$$
+\text{Var}[y_{n+1} \mid \sigma^2]
+= \underbrace{\text{Var}[\mathbf{x}_{n+1}^T\boldsymbol{\beta} \mid \sigma^2]}_{\text{uncertainty in } \boldsymbol{\beta}}
++ \underbrace{\text{Var}[\varepsilon_{n+1}]}_{\text{observation noise}}
+$$
+
+For the first term, use $\text{Var}[A\mathbf{z}] = A\,\text{Cov}(\mathbf{z})\,A^T$:
+
+$$
+\text{Var}[\mathbf{x}_{n+1}^T\boldsymbol{\beta} \mid \sigma^2]
+= \mathbf{x}_{n+1}^T (\sigma^2 L_n^{-1}) \mathbf{x}_{n+1}
+= \sigma^2 \cdot \mathbf{x}_{n+1}^T L_n^{-1} \mathbf{x}_{n+1}
+$$
+
+The second term is simply $\sigma^2$. Combining:
+
+$$
+\text{Var}[y_{n+1} \mid \sigma^2]
+= \sigma^2 \cdot \mathbf{x}_{n+1}^T L_n^{-1} \mathbf{x}_{n+1} + \sigma^2
+= \sigma^2\big(1 + \mathbf{x}_{n+1}^T L_n^{-1} \mathbf{x}_{n+1}\big)
+$$
+
+**Result of Stage 1:** After integrating out $\boldsymbol{\beta}$:
+
+$$
+y_{n+1} \mid \sigma^2, \mathbf{y}, X \sim \mathcal{N}\!\left(\mathbf{x}_{n+1}^T\mathbf{m}_n,\;\; \sigma^2\big(1 + \mathbf{x}_{n+1}^T L_n^{-1} \mathbf{x}_{n+1}\big)\right)
+\tag{$\star$}
+$$
+
+For convenience, define:
+
+$$
+\mu_{\star} \triangleq \mathbf{x}_{n+1}^T\mathbf{m}_n, \qquad
+s \triangleq 1 + \mathbf{x}_{n+1}^T L_n^{-1} \mathbf{x}_{n+1}
+$$
+
+So $(\star)$ says: $y_{n+1} \mid \sigma^2 \sim \mathcal{N}(\mu_{\star},\; \sigma^2 s)$.
+
+---
+
+**Stage 2: Integrate out $\sigma^2$.**
+
+After Stage 1, we need to compute:
+
+$$
+p(y_{n+1} \mid \mathbf{x}_{n+1}, \mathbf{y}, X, \boldsymbol{\eta}_0)
+= \int \underbrace{\mathcal{N}(y_{n+1} \mid \mu_{\star},\; \sigma^2 s)}_{\text{from Stage 1}}
+\cdot \underbrace{\chi^{-2}(\sigma^2 \mid \nu_n, \tau_n^2)}_{\text{posterior on } \sigma^2}\;d\sigma^2
+$$
+
+This is a Gaussian whose variance is proportional to $\sigma^2$, averaged over $\sigma^2 \sim \chi^{-2}(\nu_n, \tau_n^2)$.
+
+**This is exactly the setup from Linderman slides, page 32 (eqs. 41--43).** There, for the scalar case with:
+- $\sigma^2 \sim \chi^{-2}(\nu_N, \sigma_N^2)$
+- $\mu \mid \sigma^2 \sim \mathcal{N}(\mu_N, \sigma^2/\kappa_N)$
+
+the marginal (integrating out $\sigma^2$) is shown to be:
+
+$$
+p(\mu \mid X, \boldsymbol{\eta}) = \text{St}(\mu;\; \nu_N,\; \mu_N,\; \sigma_N^2/\kappa_N)
+\tag{Linderman eq. 43}
+$$
+
+**How our problem maps to the slides.** Let's match the variables:
+
+| Slides notation | Our notation | Value |
+|-----------------|-------------|-------|
+| The variable being marginalized | $\mu$ | $y_{n+1}$ |
+| Degrees of freedom $\nu_N$ | $\nu_n$ | $\nu_0 + n$ |
+| Gaussian mean $\mu_N$ | $\mu_{\star}$ | $\mathbf{x}_{n+1}^T\mathbf{m}_n$ |
+| Scale of $\chi^{-2}$: $\sigma_N^2$ | $\tau_n^2$ | (from Problem 1) |
+| Gaussian variance $= \sigma^2/\kappa_N$ | $\sigma^2 \cdot s$ | So $1/\kappa = s$, i.e., $\sigma_N^2/\kappa_N = \tau_n^2 \cdot s$ |
+
+**Why this integral gives a Student's t (intuition):** The Student's t arises whenever you have a Gaussian but are uncertain about the variance. You're averaging over many Gaussians:
+- Some have small $\sigma^2$ (tight Gaussians, most mass near the mean)
+- Some have large $\sigma^2$ (wide Gaussians, mass spread far out)
+
+The average of all these Gaussians has **heavier tails** than any single one -- because the wide-variance Gaussians contribute extra probability mass far from the mean. This is the Student's t. (See Linderman slide 33 for a visual: the red t-distribution has heavier tails than the blue Gaussian.)
+
+**Applying the result:**
+
+$$
+p(y_{n+1} \mid \mathbf{x}_{n+1}, \mathbf{y}, X, \boldsymbol{\eta}_0)
+= \text{St}\!\left(y_{n+1};\;\; \nu_n,\;\; \mu_{\star},\;\; \tau_n^2 \cdot s\right)
+$$
+
+Substituting back $\mu_{\star}$ and $s$:
+
+$$
+\boxed{
+p(y_{n+1} \mid \mathbf{x}_{n+1}, \mathbf{y}, X, \boldsymbol{\eta}_0)
+= \text{St}\!\left(y_{n+1};\;\; \nu_n,\;\; \mathbf{x}_{n+1}^T\mathbf{m}_n,\;\; \tau_n^2\big(1 + \mathbf{x}_{n+1}^T L_n^{-1} \mathbf{x}_{n+1}\big)\right)
+}
+$$
+
+where $\text{St}(x;\, \nu,\, \mu,\, \sigma^2)$ denotes the Student's t distribution with $\nu$ degrees of freedom, location $\mu$, and scale $\sigma^2$, whose density is (from Linderman eq. 44):
+
+$$
+\text{St}(x;\, \nu, \mu, \sigma^2) = \frac{\Gamma(\frac{\nu+1}{2})}{\Gamma(\frac{\nu}{2})} \cdot \frac{1}{\sqrt{\pi\nu\sigma^2}} \left[1 + \frac{(x-\mu)^2}{\nu\sigma^2}\right]^{-(\nu+1)/2}
+$$
+
+---
+
+**Summary of the posterior predictive parameters:**
+
+| Parameter | Value | Interpretation |
+|-----------|-------|----------------|
+| Degrees of freedom $\nu_n$ | $\nu_0 + n$ | More data $\to$ larger $\nu_n$ $\to$ closer to Gaussian |
+| Location $\mu_{\star}$ | $\mathbf{x}_{n+1}^T\mathbf{m}_n$ | Prediction using posterior mean of $\boldsymbol{\beta}$ |
+| Scale $\tau_n^2 \cdot s$ | $\tau_n^2(1 + \mathbf{x}_{n+1}^TL_n^{-1}\mathbf{x}_{n+1})$ | Combines noise uncertainty ($\tau_n^2$) and parameter uncertainty ($\mathbf{x}_{n+1}^TL_n^{-1}\mathbf{x}_{n+1}$) |
+
+**Key takeaways:**
+- As $n \to \infty$, $\nu_n \to \infty$ and the Student's t approaches a Gaussian (we become certain about $\sigma^2$)
+- The scale term $\mathbf{x}_{n+1}^TL_n^{-1}\mathbf{x}_{n+1}$ is larger when $\mathbf{x}_{n+1}$ is far from the training data, giving wider prediction intervals in extrapolation regions
+- The "$1 +$" in the scale reflects irreducible observation noise: even with perfect knowledge of $\boldsymbol{\beta}$, predictions are still noisy
+
+**Interpretation of the scale term** $\tau_n^2(1 + \mathbf{x}_{n+1}^TL_n^{-1}\mathbf{x}_{n+1})$:
+- $\tau_n^2$: uncertainty from estimating $\sigma^2$ (the noise level)
+- $\mathbf{x}_{n+1}^TL_n^{-1}\mathbf{x}_{n+1}$: uncertainty from estimating $\boldsymbol{\beta}$ (larger when $\mathbf{x}_{n+1}$ is far from the training data)
+- The $1 +$ reflects that even if we knew $\boldsymbol{\beta}$ perfectly, there's still observation noise $\sigma^2$
+
+---
+
+---
+
 ## Q: Work through Problem 2 in detail.
 
 ### A: Problem 2 -- Detailed Solution
