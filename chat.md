@@ -2,6 +2,151 @@
 
 ---
 
+## Q: Work through Problem 2 in detail.
+
+### A: Problem 2 -- Detailed Solution
+
+We use the posterior parameters derived in Problem 1 and take the uninformative limit $L_0 \to 0$ and $\nu_0 \to 0$.
+
+---
+
+### Part (a): $\mathbb{E}[\boldsymbol{\beta} \mid \mathbf{y}, X, \boldsymbol{\eta}_0]$ in the uninformative limit
+
+**Setup.** From Problem 1, the posterior on $\boldsymbol{\beta}$ (conditional on $\sigma^2$) is Gaussian with mean $\mathbf{m}_n$. Since the mean of a Gaussian is also its expectation, and the NIX structure means $\mathbb{E}[\boldsymbol{\beta} \mid \mathbf{y}, X] = \mathbf{m}_n$ regardless of $\sigma^2$ (the conditional mean doesn't depend on $\sigma^2$), we have:
+
+$$
+\mathbb{E}[\boldsymbol{\beta} \mid \mathbf{y}, X, \boldsymbol{\eta}_0] = \mathbf{m}_n = L_n^{-1}(L_0\mathbf{m}_0 + X^T\mathbf{y})
+$$
+
+**Why the mean doesn't depend on $\sigma^2$:** In the NIX posterior, $p(\boldsymbol{\beta} \mid \sigma^2, \mathbf{y}, X) = \mathcal{N}(\mathbf{m}_n, \sigma^2 L_n^{-1})$. The mean $\mathbf{m}_n$ is the same for every value of $\sigma^2$ -- only the variance $\sigma^2 L_n^{-1}$ changes. So when we marginalize over $\sigma^2$:
+
+$$
+\mathbb{E}[\boldsymbol{\beta} \mid \mathbf{y}, X]
+= \mathbb{E}_{\sigma^2}\!\Big[\mathbb{E}[\boldsymbol{\beta} \mid \sigma^2, \mathbf{y}, X]\Big]
+= \mathbb{E}_{\sigma^2}[\mathbf{m}_n]
+= \mathbf{m}_n
+$$
+
+**Now take the limit.** As $L_0 \to 0$:
+
+$$
+L_n = L_0 + X^TX \;\to\; X^TX
+$$
+
+$$
+L_n\mathbf{m}_n = L_0\mathbf{m}_0 + X^T\mathbf{y} \;\to\; X^T\mathbf{y}
+$$
+
+Therefore:
+
+$$
+\mathbf{m}_n \to (X^TX)^{-1}X^T\mathbf{y}
+$$
+
+We recognize this immediately:
+
+$$
+\boxed{\lim_{L_0 \to 0,\;\nu_0 \to 0}\;\mathbb{E}[\boldsymbol{\beta} \mid \mathbf{y}, X, \boldsymbol{\eta}_0] = (X^TX)^{-1}X^T\mathbf{y} = \hat{\boldsymbol{\beta}}_{\text{OLS}}}
+$$
+
+**Interpretation:** With an uninformative prior (no prior opinion about $\boldsymbol{\beta}$), the Bayesian posterior mean reduces to the ordinary least squares estimator. The prior contributes nothing, so the data fully determines the estimate.
+
+Note: $\nu_0 \to 0$ does not affect $\mathbf{m}_n$ at all -- it only appears in $\nu_n$ and $\tau_n^2$.
+
+---
+
+### Part (b): $\mathbb{E}[\sigma^2 \mid \mathbf{y}, X, \boldsymbol{\eta}_0]$ in the uninformative limit
+
+**Setup.** From Problem 1, the posterior marginal on $\sigma^2$ is $\chi^{-2}(\nu_n, \tau_n^2)$. The mean of a scaled inverse chi-squared distribution is:
+
+$$
+\mathbb{E}[\sigma^2 \mid \mathbf{y}, X, \boldsymbol{\eta}_0] = \frac{\nu_n}{\nu_n - 2}\,\tau_n^2
+\qquad\text{(valid for } \nu_n > 2\text{)}
+$$
+
+**Step 1: Find $\nu_n$ in the limit.**
+
+$$
+\nu_n = \nu_0 + n \;\xrightarrow{\nu_0 \to 0}\; n
+$$
+
+**Step 2: Find $\tau_n^2$ in the limit.**
+
+From Problem 1:
+
+$$
+\tau_n^2 = \frac{1}{\nu_n}\Big(\nu_0\tau_0^2 + \mathbf{y}^T\mathbf{y} + \mathbf{m}_0^TL_0\mathbf{m}_0 - \mathbf{m}_n^TL_n\mathbf{m}_n\Big)
+$$
+
+As $L_0 \to 0$ and $\nu_0 \to 0$:
+- $\nu_0\tau_0^2 \to 0$ (prior contribution vanishes)
+- $\mathbf{m}_0^TL_0\mathbf{m}_0 \to 0$ (since $L_0 \to 0$, this quadratic form vanishes)
+- $L_n \to X^TX$
+- $\mathbf{m}_n \to (X^TX)^{-1}X^T\mathbf{y} = \hat{\boldsymbol{\beta}}_{\text{OLS}}$
+- $\nu_n \to n$
+
+So:
+
+$$
+\tau_n^2 \to \frac{1}{n}\Big(\mathbf{y}^T\mathbf{y} - \hat{\boldsymbol{\beta}}_{\text{OLS}}^T X^TX\, \hat{\boldsymbol{\beta}}_{\text{OLS}}\Big)
+\tag{$*$}
+$$
+
+**Step 3: Simplify $\hat{\boldsymbol{\beta}}_{\text{OLS}}^T X^TX\, \hat{\boldsymbol{\beta}}_{\text{OLS}}$ using the hat matrix.**
+
+Substituting $\hat{\boldsymbol{\beta}}_{\text{OLS}} = (X^TX)^{-1}X^T\mathbf{y}$:
+
+$$
+\hat{\boldsymbol{\beta}}_{\text{OLS}}^T X^TX\, \hat{\boldsymbol{\beta}}_{\text{OLS}}
+= \Big[(X^TX)^{-1}X^T\mathbf{y}\Big]^T X^TX \Big[(X^TX)^{-1}X^T\mathbf{y}\Big]
+$$
+
+$$
+= \mathbf{y}^TX\underbrace{(X^TX)^{-1} X^TX}_{=\;I}\,(X^TX)^{-1}X^T\mathbf{y}
+$$
+
+$$
+= \mathbf{y}^T\underbrace{X(X^TX)^{-1}X^T}_{=\;H}\,\mathbf{y}
+$$
+
+$$
+= \mathbf{y}^TH\mathbf{y}
+$$
+
+where $H = X(X^TX)^{-1}X^T$ is the hat matrix.
+
+**Step 4: Substitute back into ($*$).**
+
+$$
+\tau_n^2 \to \frac{1}{n}\Big(\mathbf{y}^T\mathbf{y} - \mathbf{y}^TH\mathbf{y}\Big) = \frac{\mathbf{y}^T(I_n - H)\mathbf{y}}{n}
+$$
+
+Note: $\mathbf{y}^T(I-H)\mathbf{y} = \|\mathbf{y} - X\hat{\boldsymbol{\beta}}_{\text{OLS}}\|^2 = \text{RSS}$ (residual sum of squares), since $H\mathbf{y} = X\hat{\boldsymbol{\beta}}_{\text{OLS}}$ are the fitted values.
+
+**Step 5: Compute the expectation.**
+
+$$
+\mathbb{E}[\sigma^2] = \frac{\nu_n}{\nu_n - 2}\,\tau_n^2
+\;\to\;
+\frac{n}{n-2}\cdot\frac{\mathbf{y}^T(I_n - H)\mathbf{y}}{n}
+$$
+
+$$
+\boxed{\lim_{L_0 \to 0,\;\nu_0 \to 0}\;\mathbb{E}[\sigma^2 \mid \mathbf{y}, X, \boldsymbol{\eta}_0] = \frac{\mathbf{y}^T(I_n - H)\mathbf{y}}{n - 2}}
+$$
+
+**Interpretation:** Compare this to the classical unbiased variance estimator $s^2 = \frac{\text{RSS}}{n-p}$ where $p$ is the number of parameters. Our answer has $n-2$ in the denominator because $p = 2$ in this problem (the covariates are $\mathbf{x}_i = (1, x_i) \in \mathbb{R}^2$). More generally, with a $p$-dimensional $\boldsymbol{\beta}$ and the uninformative limit, the posterior mean of $\sigma^2$ equals:
+
+$$
+\frac{\mathbf{y}^T(I_n - H)\mathbf{y}}{n - 2} = \frac{\text{RSS}}{n-2}
+$$
+
+This is very close to the classical estimator. The slight difference (using $n - 2$ from the $\chi^{-2}$ mean formula vs. the classical $n - p$) is because the $\chi^{-2}$ mean formula $\frac{\nu}{\nu-2}$ introduces the factor, and here $\nu_n = n$ while the "effective degrees of freedom" for the residuals is $n - p$. In general for $p$-dimensional regression with a fully uninformative prior, the posterior degrees of freedom in the $\chi^{-2}$ is $\nu_n = n$ but the RSS has $n-p$ effective degrees of freedom, so the result simplifies to $\text{RSS}/(n-2)$ specifically because $p=2$ in this problem.
+
+---
+
+---
+
 ## Q: Write a formal solution for Problem 1, as I would answer on the assignment.
 
 ### A: Problem 1 -- Formal Solution
